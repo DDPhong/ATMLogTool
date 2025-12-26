@@ -3,219 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATMLogTool - Trình đọc Log Bảo mật</title>
+    <title>ATMLogTool - Trình đọc Log chuyên nghiệp</title>
     
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
-        .app-container { max-width: 1000px; width: 95%; align-self: flex-start; margin-top: 20px; text-align: left; }
-        h2 { color: #1c1e21; margin-bottom: 20px; }
-        input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
-        .logout-btn { background-color: #dc3545; width: auto; padding: 8px 15px; float: right; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; }
+        .app-container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; }
+        .logout-btn { float: right; padding: 8px 15px; background: #ff4d4d; color: white; border: none; border-radius: 5px; cursor: pointer; }
         
-        /* Giao diện đọc Log */
-        #log-viewer { width: 100%; height: 400px; margin-top: 20px; font-family: 'Consolas', monospace; background: #282a36; color: #f8f8f2; padding: 15px; border-radius: 8px; border: none; overflow: auto; white-space: pre; }
-        #app-ui { display: none; }
-        .file-input-group { background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #007bff; margin: 20px 0; text-align: center; }
+        /* File Input Style */
+        .file-input-group { border: 2px dashed #007bff; padding: 20px; text-align: center; border-radius: 10px; background: #f0f7ff; margin: 20px 0; }
+        
+        /* Search Bar */
+        #searchInput { width: 100%; padding: 12px; border: 2px solid #007bff; border-radius: 5px; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
+
+        /* Table Style */
+        .table-wrapper { overflow-x: auto; max-height: 550px; border: 1px solid #ddd; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        thead { position: sticky; top: 0; background: #007bff; color: white; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f7ff; }
+        
+        .status-ok { color: #28a745; font-weight: bold; }
+        .status-error { color: #dc3545; font-weight: bold; }
+        #file-details { margin-bottom: 10px; font-style: italic; color: #666; }
     </style>
 </head>
 <body>
 
-    <div id="login-ui" class="box">
-        <h2>ATMLogTool Login</h2>
-        <p>Vui lòng đăng nhập để sử dụng công cụ</p>
-        <input type="email" id="email" placeholder="Email (ví dụ: admin@atmlog.com)">
-        <input type="password" id="password" placeholder="Mật khẩu">
-        <button onclick="handleLogin()">Đăng nhập</button>
-        <p id="error-msg" style="color: red; margin-top: 10px;"></p>
-    </div>
+<div id="app-ui" class="app-container">
+    <button class="logout-btn" onclick="handleLogout()">Đăng xuất</button>
+    <h2>🏦 Trình đọc Log ATM chuyên nghiệp</h2>
+    <p style="text-align: center;">Trạng thái: <span style="color: green; font-weight: bold;">● Đã kết nối Firebase</span></p>
 
-    <div id="app-ui" class="box app-container">
-        <button class="logout-btn" onclick="handleLogout()">Đăng xuất</button>
-        <h2>Trình đọc Log ATM</h2>
-        <p>Trạng thái: <span style="color: green; font-weight: bold;">Đã kết nối</span></p>
-        
-        <div class="file-input-group">
-                    <label for="filePicker" style="cursor: pointer; color: #007bff; font-weight: bold;">
-            Mời chọn file Log (.log, .txt, .jrn) từ máy tính
+    <div class="file-input-group">
+        <label for="filePicker" style="cursor: pointer; color: #007bff; font-weight: bold; font-size: 18px;">
+            📁 Mời chọn file Log (.log, .txt, .jrn)
         </label>
-            <input type="file" id="filePicker" accept=".log,.txt,.jrn" style="display: block; margin: 10px auto;">
-        </div>
-
-        <div id="file-details" style="font-size: 14px; color: #666;"></div>
-        <div class="main-content" style="margin-top: 20px;">
-    
-    <div style="margin-bottom: 15px;">
-        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Gõ số thẻ, tên khách hàng hoặc mã Trace để tìm..." 
-               style="width: 100%; padding: 12px; border: 2px solid #007bff; border-radius: 5px; font-size: 16px;">
+        <input type="file" id="filePicker" accept=".log,.txt,.jrn" style="display: block; margin: 15px auto;">
     </div>
 
-    <div style="overflow-x: auto; max-height: 600px; border: 1px solid #ddd;">
-        <table id="logTable" style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px;">
-            <thead>
-                <tr style="background: #007bff; color: white; position: sticky; top: 0;">
-                    <th style="padding: 12px; text-align: left;">Thời gian</th>
-                    <th style="padding: 12px; text-align: left;">Trace</th>
-                    <th style="padding: 12px; text-align: left;">Số thẻ</th>
-                    <th style="padding: 12px; text-align: left;">Khách hàng</th>
-                    <th style="padding: 12px; text-align: left;">Số tiền</th>
-                    <th style="padding: 12px; text-align: left;">Trạng thái</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr>
-                    <td colspan="6" style="text-align: center; padding: 20px; color: #999;">
-                        Chưa có dữ liệu. Vui lòng chọn file Log phía trên.
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <div id="file-details">Vui lòng chọn file để bắt đầu phân tích...</div>
+
+    <div class="main-content">
+        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Tìm nhanh: Số thẻ, Trace, Tên khách hàng...">
+        
+        <div class="table-wrapper">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Trace</th>
+                        <th>Số thẻ</th>
+                        <th>Khách hàng</th>
+                        <th>Số tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #999;">
+                            Dữ liệu sẽ hiển thị tại đây sau khi bạn chọn file.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-    </div>
 
-    <script>
-        // ==========================================
-        // BƯỚC QUAN TRỌNG: DÁN CONFIG CỦA BẠN VÀO ĐÂY
-        // ==========================================
-       // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-          apiKey: "AIzaSyAI9JLeO3Wd4i-AOUGHRFVlNI4ZnVRv6I4",
-          authDomain: "atmlogtoolauth.firebaseapp.com",
-          projectId: "atmlogtoolauth",
-          storageBucket: "atmlogtoolauth.firebasestorage.app",
-          messagingSenderId: "813329348858",
-          appId: "1:813329348858:web:afa726940ad9b8c37cb143",
-          measurementId: "G-1TF3R94EW9"
-        };
-        // ==========================================
-
-        // Khởi tạo Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        // Kiểm tra trạng thái đăng nhập tự động
-        auth.onAuthStateChanged((user) => {
-            const loginUI = document.getElementById('login-ui');
-            const appUI = document.getElementById('app-ui');
-            
-            if (user) {
-                loginUI.style.display = 'none';
-                appUI.style.display = 'block';
-            } else {
-                loginUI.style.display = 'block';
-                appUI.style.display = 'none';
-            }
-        });
-
-        // Hàm xử lý Đăng nhập
-        function handleLogin() {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            const errorMsg = document.getElementById('error-msg');
-
-            auth.signInWithEmailAndPassword(email, pass)
-                .then(() => { errorMsg.innerText = ""; })
-                .catch((error) => { errorMsg.innerText = "Lỗi: " + error.message; });
-        }
-
-        // Hàm xử lý Đăng xuất
-        function handleLogout() {
-            auth.signOut();
-        }
-
-        // Xử lý đọc File sau khi người dùng chọn file
-        document.getElementById('filePicker').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Hiển thị tên file ngay lập tức để biết web đã nhận file
-    document.getElementById('file-details').innerText = `Đang đọc: ${file.name}...`;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const content = e.target.result;
-        // Đổ dữ liệu vào ô xem Log
-        document.getElementById('log-viewer').value = content;
-        document.getElementById('file-details').innerText = `File: ${file.name} | Dung lượng: ${(file.size/1024).toFixed(2)} KB`;
+<script>
+    // --- 1. CẤU HÌNH FIREBASE (THAY THẾ ĐOẠN NÀY BẰNG CỦA BẠN) ---
+   // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyAI9JLeO3Wd4i-AOUGHRFVlNI4ZnVRv6I4",
+      authDomain: "atmlogtoolauth.firebaseapp.com",
+      projectId: "atmlogtoolauth",
+      storageBucket: "atmlogtoolauth.firebasestorage.app",
+      messagingSenderId: "813329348858",
+      appId: "1:813329348858:web:afa726940ad9b8c37cb143",
+      measurementId: "G-1TF3R94EW9"
     };
-    
-    // Đảm bảo dùng bảng mã UTF-8 để không bị lỗi font tiếng Việt hoặc ký tự đặc biệt trong Log
-    reader.readAsText(file, "UTF-8"); 
-});        
-    </script>
+    firebase.initializeApp(firebaseConfig);
 
-    <script>
-    // 1. Các cấu hình Firebase của bạn dán ở đây...
-
-    // 2. Hàm Parser (Bộ não lọc dữ liệu) - Dán đoạn này vào
-    function parseATMLog(rawText) {
-        const lines = rawText.split('\n');
-        const transactions = [];
-        let currentTrans = null;
-
-        lines.forEach(line => {
-            if (line.includes("TRANSACTION START")) {
-                currentTrans = {
-                    time: line.substring(0, 19),
-                    type: line.includes("CARDLESS") ? "Không thẻ" : "Giao dịch thẻ",
-                    trace: "", card: "", name: "", amount: "0", status: "Chờ..."
-                };
-            } 
-            if (currentTrans) {
-                if (line.includes("TRACE :")) currentTrans.trace = line.split(":")[1].trim();
-                if (line.includes("CARD NUMBER")) currentTrans.card = line.split("NUMBER")[1].trim();
-                if (line.includes("CUSTOMER NAME :")) currentTrans.name = line.split(":")[1].trim();
-                if (line.includes("AMOUNT:")) currentTrans.amount = line.split(":")[1].trim();
-                
-                // Nhận diện kết quả
-                if (line.includes("Success")) currentTrans.status = "Thành công";
-                if (line.includes("ERROR") || line.includes("TIMEOUT")) currentTrans.status = "Lỗi/Timeout";
-                if (line.includes("Money Taken")) currentTrans.status = "Thành công (Đã lấy tiền)";
-
-                if (line.includes("TRANSACTION END")) {
-                    transactions.push(currentTrans);
-                    currentTrans = null;
-                }
-            }
-        });
-        return transactions;
-    }
-
-    // 3. Hàm hiển thị dữ liệu lên bảng
-    function displayTable(data) {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = ""; // Xóa dữ liệu cũ
-        data.forEach(item => {
-            const row = `<tr>
-                <td>${item.time}</td>
-                <td>${item.trace}</td>
-                <td>${item.card}</td>
-                <td>${item.name}</td>
-                <td>${item.amount}</td>
-                <td style="color: ${item.status.includes('Lỗi') ? 'red' : 'green'}">${item.status}</td>
-            </tr>`;
-            tbody.innerHTML += row;
-        });
-    }
-
-    // 4. Sự kiện khi chọn file (Kết nối bộ đọc với bảng)
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    // --- 2. XỬ LÝ ĐỌC FILE ---
+    document.getElementById('filePicker').addEventListener('change', function(e) {
         const file = e.target.files[0];
+        if (!file) return;
+
+        document.getElementById('file-details').innerText = `Đang xử lý: ${file.name} (${(file.size/1024).toFixed(2)} KB)`;
+        
         const reader = new FileReader();
         reader.onload = function(event) {
             const content = event.target.result;
-            const parsedData = parseATMLog(content); // Chuyển văn bản thành danh sách
-            displayTable(parsedData); // Đổ danh sách vào bảng
+            const transactions = parseATMLog(content);
+            renderTable(transactions);
         };
-        reader.readAsText(file);
+        reader.readAsText(file, "UTF-8");
     });
+
+    // --- 3. BỘ NÃO PHÂN TÍCH LOG (PARSER) ---
+    function parseATMLog(rawText) {
+        const lines = rawText.split('\n');
+        const results = [];
+        let item = null;
+
+        lines.forEach(line => {
+            // Nhận diện điểm bắt đầu giao dịch
+            if (line.includes("TRANSACTION START") || line.includes("CARDLESS TRANSACTION START")) {
+                item = {
+                    time: line.substring(0, 19).trim(),
+                    trace: "---",
+                    card: "N/A",
+                    name: "N/A",
+                    amount: "0",
+                    status: "Chưa hoàn thành"
+                };
+            }
+
+            if (item) {
+                // Trích xuất dữ liệu dựa trên từ khóa
+                if (line.includes("TRACE :")) item.trace = line.split(":")[1].trim();
+                if (line.includes("CARD NUMBER")) item.card = line.split("NUMBER")[1].trim();
+                if (line.includes("CUSTOMER NAME :")) item.name = line.split(":")[1].trim();
+                
+                // Trích xuất số tiền từ nhiều dạng dòng khác nhau
+                if (line.includes("AMOUNT:")) item.amount = line.split(":")[1].trim();
+                if (line.includes("ACCEPTED AMOUNT:")) item.amount = line.split(":")[1].trim();
+
+                // Xác định trạng thái
+                if (line.includes("Success") || line.includes("Complete") || line.includes("Money Taken")) {
+                    item.status = "Thành công";
+                }
+                if (line.includes("ERROR") || line.includes("TIMEOUT") || line.includes("HOST TIMEOUT")) {
+                    item.status = "Lỗi / Timeout";
+                }
+
+                // Kết thúc một giao dịch
+                if (line.includes("TRANSACTION END")) {
+                    results.push(item);
+                    item = null;
+                }
+            }
+        });
+        return results;
+    }
+
+    // --- 4. HIỂN THỊ DỮ LIỆU LÊN BẢNG ---
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Không tìm thấy cấu trúc giao dịch trong file này.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map(tr => `
+            <tr>
+                <td>${tr.time}</td>
+                <td><b>${tr.trace}</b></td>
+                <td>${tr.card}</td>
+                <td>${tr.name}</td>
+                <td>${tr.amount}</td>
+                <td class="${tr.status.includes('Thành công') ? 'status-ok' : 'status-error'}">${tr.status}</td>
+            </tr>
+        `).join('');
+    }
+
+    // --- 5. HÀM TÌM KIẾM ---
+    function filterTable() {
+        const input = document.getElementById("searchInput");
+        const filter = input.value.toUpperCase();
+        const trs = document.getElementById("tableBody").getElementsByTagName("tr");
+
+        for (let i = 0; i < trs.length; i++) {
+            const text = trs[i].textContent || trs[i].innerText;
+            trs[i].style.display = text.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+
+    // --- 6. ĐĂNG XUẤT ---
+    function handleLogout() {
+        firebase.auth().signOut().then(() => {
+            alert("Đã đăng xuất!");
+            window.location.reload();
+        });
+    }
 </script>
+
 </body>
 </html>
