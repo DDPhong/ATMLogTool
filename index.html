@@ -48,7 +48,35 @@
         </div>
 
         <div id="file-details" style="font-size: 14px; color: #666;"></div>
-        <textarea id="log-viewer" readonly placeholder="Nội dung log sẽ hiển thị tại đây..."></textarea>
+        <div class="main-content" style="margin-top: 20px;">
+    
+    <div style="margin-bottom: 15px;">
+        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Gõ số thẻ, tên khách hàng hoặc mã Trace để tìm..." 
+               style="width: 100%; padding: 12px; border: 2px solid #007bff; border-radius: 5px; font-size: 16px;">
+    </div>
+
+    <div style="overflow-x: auto; max-height: 600px; border: 1px solid #ddd;">
+        <table id="logTable" style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px;">
+            <thead>
+                <tr style="background: #007bff; color: white; position: sticky; top: 0;">
+                    <th style="padding: 12px; text-align: left;">Thời gian</th>
+                    <th style="padding: 12px; text-align: left;">Trace</th>
+                    <th style="padding: 12px; text-align: left;">Số thẻ</th>
+                    <th style="padding: 12px; text-align: left;">Khách hàng</th>
+                    <th style="padding: 12px; text-align: left;">Số tiền</th>
+                    <th style="padding: 12px; text-align: left;">Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #999;">
+                        Chưa có dữ liệu. Vui lòng chọn file Log phía trên.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
     </div>
 
     <script>
