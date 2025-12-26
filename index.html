@@ -2,20 +2,117 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>ATMLogTool - Web Version</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATMLogTool - Trình đọc Log Bảo mật</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
-        .container { border: 1px solid #ccc; padding: 20px; display: inline-block; border-radius: 8px; }
-        h1 { color: #007bff; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        .app-container { max-width: 1000px; width: 95%; align-self: flex-start; margin-top: 20px; text-align: left; }
+        h2 { color: #1c1e21; margin-bottom: 20px; }
+        input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        .logout-btn { background-color: #dc3545; width: auto; padding: 8px 15px; float: right; }
+        
+        /* Giao diện đọc Log */
+        #log-viewer { width: 100%; height: 400px; margin-top: 20px; font-family: 'Consolas', monospace; background: #282a36; color: #f8f8f2; padding: 15px; border-radius: 8px; border: none; overflow: auto; white-space: pre; }
+        #app-ui { display: none; }
+        .file-input-group { background: #fff; padding: 20px; border-radius: 8px; border: 2px dashed #007bff; margin: 20px 0; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>ATMLogTool</h1>
-        <p>Chào bạn <strong>DDPhong</strong>!</p>
-        <p>Hệ thống đang sẵn sàng để tích hợp Firebase Login.</p>
-        <hr>
-        <p style="color: gray;">Trạng thái: Đang phát triển</p>
+
+    <div id="login-ui" class="box">
+        <h2>ATMLogTool Login</h2>
+        <p>Vui lòng đăng nhập để sử dụng công cụ</p>
+        <input type="email" id="email" placeholder="Email (ví dụ: admin@atmlog.com)">
+        <input type="password" id="password" placeholder="Mật khẩu">
+        <button onclick="handleLogin()">Đăng nhập</button>
+        <p id="error-msg" style="color: red; margin-top: 10px;"></p>
     </div>
+
+    <div id="app-ui" class="box app-container">
+        <button class="logout-btn" onclick="handleLogout()">Đăng xuất</button>
+        <h2>Trình đọc Log ATM</h2>
+        <p>Trạng thái: <span style="color: green; font-weight: bold;">Đã kết nối</span></p>
+        
+        <div class="file-input-group">
+            <label for="filePicker" style="cursor: pointer; color: #007bff; font-weight: bold;">
+                Mời chọn file Log (.log, .txt) từ máy tính
+            </label>
+            <input type="file" id="filePicker" accept=".log,.txt" style="display: block; margin: 10px auto;">
+        </div>
+
+        <div id="file-details" style="font-size: 14px; color: #666;"></div>
+        <textarea id="log-viewer" readonly placeholder="Nội dung log sẽ hiển thị tại đây..."></textarea>
+    </div>
+
+    <script>
+        // ==========================================
+        // BƯỚC QUAN TRỌNG: DÁN CONFIG CỦA BẠN VÀO ĐÂY
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSy...", 
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+        // ==========================================
+
+        // Khởi tạo Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Kiểm tra trạng thái đăng nhập tự động
+        auth.onAuthStateChanged((user) => {
+            const loginUI = document.getElementById('login-ui');
+            const appUI = document.getElementById('app-ui');
+            
+            if (user) {
+                loginUI.style.display = 'none';
+                appUI.style.display = 'block';
+            } else {
+                loginUI.style.display = 'block';
+                appUI.style.display = 'none';
+            }
+        });
+
+        // Hàm xử lý Đăng nhập
+        function handleLogin() {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => { errorMsg.innerText = ""; })
+                .catch((error) => { errorMsg.innerText = "Lỗi: " + error.message; });
+        }
+
+        // Hàm xử lý Đăng xuất
+        function handleLogout() {
+            auth.signOut();
+        }
+
+        // Xử lý đọc File sau khi người dùng chọn file
+        document.getElementById('filePicker').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                // Đổ dữ liệu vào ô xem Log
+                document.getElementById('log-viewer').value = content;
+                document.getElementById('file-details').innerText = `Đang xem file: ${file.name} - Dung lượng: ${(file.size/1024).toFixed(2)} KB`;
+            };
+            reader.readAsText(file);
+        });
+    </script>
 </body>
 </html>
