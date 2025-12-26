@@ -120,7 +120,74 @@
     
     // Đảm bảo dùng bảng mã UTF-8 để không bị lỗi font tiếng Việt hoặc ký tự đặc biệt trong Log
     reader.readAsText(file, "UTF-8"); 
-});
+});        
     </script>
+
+    <script>
+    // 1. Các cấu hình Firebase của bạn dán ở đây...
+
+    // 2. Hàm Parser (Bộ não lọc dữ liệu) - Dán đoạn này vào
+    function parseATMLog(rawText) {
+        const lines = rawText.split('\n');
+        const transactions = [];
+        let currentTrans = null;
+
+        lines.forEach(line => {
+            if (line.includes("TRANSACTION START")) {
+                currentTrans = {
+                    time: line.substring(0, 19),
+                    type: line.includes("CARDLESS") ? "Không thẻ" : "Giao dịch thẻ",
+                    trace: "", card: "", name: "", amount: "0", status: "Chờ..."
+                };
+            } 
+            if (currentTrans) {
+                if (line.includes("TRACE :")) currentTrans.trace = line.split(":")[1].trim();
+                if (line.includes("CARD NUMBER")) currentTrans.card = line.split("NUMBER")[1].trim();
+                if (line.includes("CUSTOMER NAME :")) currentTrans.name = line.split(":")[1].trim();
+                if (line.includes("AMOUNT:")) currentTrans.amount = line.split(":")[1].trim();
+                
+                // Nhận diện kết quả
+                if (line.includes("Success")) currentTrans.status = "Thành công";
+                if (line.includes("ERROR") || line.includes("TIMEOUT")) currentTrans.status = "Lỗi/Timeout";
+                if (line.includes("Money Taken")) currentTrans.status = "Thành công (Đã lấy tiền)";
+
+                if (line.includes("TRANSACTION END")) {
+                    transactions.push(currentTrans);
+                    currentTrans = null;
+                }
+            }
+        });
+        return transactions;
+    }
+
+    // 3. Hàm hiển thị dữ liệu lên bảng
+    function displayTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ""; // Xóa dữ liệu cũ
+        data.forEach(item => {
+            const row = `<tr>
+                <td>${item.time}</td>
+                <td>${item.trace}</td>
+                <td>${item.card}</td>
+                <td>${item.name}</td>
+                <td>${item.amount}</td>
+                <td style="color: ${item.status.includes('Lỗi') ? 'red' : 'green'}">${item.status}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // 4. Sự kiện khi chọn file (Kết nối bộ đọc với bảng)
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const content = event.target.result;
+            const parsedData = parseATMLog(content); // Chuyển văn bản thành danh sách
+            displayTable(parsedData); // Đổ danh sách vào bảng
+        };
+        reader.readAsText(file);
+    });
+</script>
 </body>
 </html>
