@@ -104,18 +104,23 @@
 
         // Xử lý đọc File sau khi người dùng chọn file
         document.getElementById('filePicker').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
-                // Đổ dữ liệu vào ô xem Log
-                document.getElementById('log-viewer').value = content;
-                document.getElementById('file-details').innerText = `Đang xem file: ${file.name} - Dung lượng: ${(file.size/1024).toFixed(2)} KB`;
-            };
-            reader.readAsText(file);
-        });
+    // Hiển thị tên file ngay lập tức để biết web đã nhận file
+    document.getElementById('file-details').innerText = `Đang đọc: ${file.name}...`;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        // Đổ dữ liệu vào ô xem Log
+        document.getElementById('log-viewer').value = content;
+        document.getElementById('file-details').innerText = `File: ${file.name} | Dung lượng: ${(file.size/1024).toFixed(2)} KB`;
+    };
+    
+    // Đảm bảo dùng bảng mã UTF-8 để không bị lỗi font tiếng Việt hoặc ký tự đặc biệt trong Log
+    reader.readAsText(file, "UTF-8"); 
+});
     </script>
 </body>
 </html>
